@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, User, Phone, FileText, Activity, Check } from "lucide-react";
+import { ArrowLeft, User, Phone, FileText, Activity, Check, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function IntakeForm() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('personal');
+    const [showRiskPrompt, setShowRiskPrompt] = useState(false);
 
     const tabs = [
         { id: 'personal', label: 'Personal Details', icon: User },
@@ -17,6 +20,33 @@ export default function IntakeForm() {
         { id: 'medical', label: 'Medical Info', icon: Activity },
         { id: 'funding', label: 'NDIS & Funding', icon: FileText },
     ];
+
+    const handleFinalize = () => {
+        // Show risk prompt instead of immediate submit
+        setShowRiskPrompt(true);
+    };
+
+    if (showRiskPrompt) {
+        return (
+            <div className="max-w-xl mx-auto pt-20 text-center space-y-6 animate-in slide-in-from-bottom-2">
+                <div className="h-20 w-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600 mb-6 dark:bg-emerald-900/30">
+                    <Check className="h-10 w-10" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Intake Complete!</h2>
+                <p className="text-slate-500 dark:text-slate-400">
+                    The participant has been successfully onboarded. Would you like to create a risk profile for them now?
+                </p>
+                <div className="flex gap-4 justify-center pt-4">
+                    <Button variant="outline" onClick={() => router.push('/participants')}>
+                        No, skip for now
+                    </Button>
+                    <Button onClick={() => router.push('/registers/risk')} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Create Risk Profile
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-20">
@@ -55,9 +85,14 @@ export default function IntakeForm() {
                         <div className="px-4">
                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Completion</p>
                             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden dark:bg-slate-800">
-                                <div className="h-full bg-emerald-500 w-[25%]" />
+                                <div
+                                    className="h-full bg-emerald-500 transition-all duration-300"
+                                    style={{ width: `${((tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length) * 100}%` }}
+                                />
                             </div>
-                            <p className="text-xs text-right text-slate-400 mt-1">25% Complete</p>
+                            <p className="text-xs text-right text-slate-400 mt-1">
+                                {Math.round(((tabs.findIndex(t => t.id === activeTab) + 1) / tabs.length) * 100)}% Complete
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -69,7 +104,7 @@ export default function IntakeForm() {
                             <CardTitle>{tabs.find(t => t.id === activeTab)?.label}</CardTitle>
                             <CardDescription>Please enter the details below.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300" key={activeTab}>
                             {activeTab === 'personal' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
@@ -179,7 +214,10 @@ export default function IntakeForm() {
                             </Button>
 
                             {activeTab === 'funding' ? (
-                                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                                <Button
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    onClick={handleFinalize}
+                                >
                                     <Check className="mr-2 h-4 w-4" /> Finalize Intake
                                 </Button>
                             ) : (

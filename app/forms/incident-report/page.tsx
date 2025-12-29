@@ -1,15 +1,37 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Save, Send } from "lucide-react";
+import { ArrowLeft, Save, Send, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function IncidentReportForm() {
+    const router = useRouter();
     const [step, setStep] = useState(1);
+    const [formData, setFormData] = useState({
+        type: '',
+        injury: false,
+        restrictivePractice: false,
+        participant: ''
+    });
+
+    const updateForm = (key: string, value: any) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleSubmit = () => {
+        // Logic to redirect if Restrictive Practice was used
+        if (formData.restrictivePractice) {
+            router.push(`/forms/restrictive-practice?incidentId=${Math.floor(Math.random() * 1000)}&participant=${encodeURIComponent(formData.participant)}`);
+        } else {
+            // Normal submission
+            router.push('/registers/incidents');
+        }
+    };
 
     return (
         <div className="max-w-3xl mx-auto space-y-6 pb-20">
@@ -33,7 +55,7 @@ export default function IncidentReportForm() {
                 />
             </div>
 
-            <StepContent step={step} />
+            <StepContent step={step} formData={formData} updateForm={updateForm} />
 
             <div className="flex justify-between pt-6 border-t border-slate-200 dark:border-slate-800">
                 <Button
@@ -49,8 +71,12 @@ export default function IncidentReportForm() {
                         Next Step
                     </Button>
                 ) : (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                        <Send className="mr-2 h-4 w-4" /> Submit Report
+                    <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={handleSubmit}
+                    >
+                        <Send className="mr-2 h-4 w-4" />
+                        {formData.restrictivePractice ? 'Submit & Report Restrictive Practice' : 'Submit Report'}
                     </Button>
                 )}
             </div>
@@ -58,7 +84,7 @@ export default function IncidentReportForm() {
     );
 }
 
-function StepContent({ step }: { step: number }) {
+function StepContent({ step, formData, updateForm }: { step: number, formData: any, updateForm: (k: string, v: any) => void }) {
     if (step === 1) {
         return (
             <Card>
@@ -82,13 +108,62 @@ function StepContent({ step }: { step: number }) {
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Type of Incident</label>
-                        <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none dark:bg-slate-950 dark:border-slate-800">
-                            <option>Physical Injury</option>
-                            <option>Behaviour of Concern</option>
-                            <option>Medical Emergency</option>
-                            <option>Property Damage</option>
+                        <select
+                            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none dark:bg-slate-950 dark:border-slate-800"
+                            value={formData.type}
+                            onChange={(e) => updateForm('type', e.target.value)}
+                        >
+                            <option value="">Select Type...</option>
+                            <option value="Physical Injury">Physical Injury</option>
+                            <option value="Behaviour of Concern">Behaviour of Concern</option>
+                            <option value="Medical Emergency">Medical Emergency</option>
+                            <option value="Property Damage">Property Damage</option>
                         </select>
                     </div>
+
+                    {/* Conditional Logic: Injury Details */}
+                    {formData.type === 'Physical Injury' && (
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3 dark:bg-slate-900 dark:border-slate-800 animate-in fade-in slide-in-from-top-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Body Part Injured</label>
+                                <Input placeholder="e.g. Left Knee" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input type="checkbox" id="firstaid" className="h-4 w-4" />
+                                <label htmlFor="firstaid" className="text-sm">First Aid Administered?</label>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Conditional Logic: Behaviour Details */}
+                    {formData.type === 'Behaviour of Concern' && (
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3 dark:bg-slate-900 dark:border-slate-800 animate-in fade-in slide-in-from-top-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Trigger (Antecedent)</label>
+                                <Input placeholder="What happened immediately before?" />
+                            </div>
+                            <div className="bg-red-50 p-3 rounded border border-red-100 dark:bg-red-900/10 dark:border-red-900/30">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="restrictive"
+                                        checked={formData.restrictivePractice}
+                                        onChange={(e) => updateForm('restrictivePractice', e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
+                                    />
+                                    <label htmlFor="restrictive" className="text-sm font-medium text-red-900 dark:text-red-400 flex items-center gap-2">
+                                        Was a restrictive practice used?
+                                        <AlertTriangle className="h-3 w-3" />
+                                    </label>
+                                </div>
+                                {formData.restrictivePractice && (
+                                    <p className="text-xs text-red-600 mt-2 ml-6 dark:text-red-400">
+                                        You will be redirected to the Restrictive Practice Register upon submission.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         );
@@ -103,7 +178,11 @@ function StepContent({ step }: { step: number }) {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Participant Name (if applicable)</label>
-                        <Input placeholder="Search participant..." />
+                        <Input
+                            placeholder="Search participant..."
+                            value={formData.participant}
+                            onChange={(e) => updateForm('participant', e.target.value)}
+                        />
                     </div>
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Staff Member Name</label>

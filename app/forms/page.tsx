@@ -9,6 +9,7 @@ export default function FormsPage() {
         { title: "Feedback Form", desc: "Log complaints, compliments, or feedback." },
         { title: "Shift Report", desc: "Daily shift handover and progress notes." },
         { title: "Participant Intake", desc: "New participant onboarding form." },
+        { title: "Restrictive Practice", desc: "Report usage of restrictive practices." },
     ];
 
     return (
@@ -33,7 +34,8 @@ export default function FormsPage() {
                                 form.title === "Incident Report" ? "/forms/incident-report" :
                                     form.title === "Feedback Form" ? "/forms/feedback" :
                                         form.title === "Shift Report" ? "/forms/shift-report" :
-                                            form.title === "Participant Intake" ? "/forms/intake" : "#"
+                                            form.title === "Participant Intake" ? "/forms/intake" :
+                                                form.title === "Restrictive Practice" ? "/forms/restrictive-practice" : "#"
                             }>
                                 <Button className="w-full">Start Form</Button>
                             </Link>

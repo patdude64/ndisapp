@@ -1,12 +1,29 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Calendar, Clock, Heart, Save, User } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Heart, Save, User, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function ShiftReportForm() {
+    const router = useRouter();
+    const [mood, setMood] = useState<string | null>(null);
+    const [incidentOccurred, setIncidentOccurred] = useState(false);
+    const [participant, setParticipant] = useState('');
+
+    const handleSubmit = () => {
+        if (incidentOccurred) {
+            router.push(`/forms/incident-report?source=shift&participant=${encodeURIComponent(participant)}`);
+        } else {
+            // Normal save
+            router.push('/forms');
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-20">
             <div className="flex items-center gap-4 mb-4">
@@ -82,9 +99,15 @@ export default function ShiftReportForm() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">General Mood</label>
                                 <div className="flex gap-2">
-                                    {['Happy', 'Calm', 'Anxious', 'Upset', 'Unwell'].map(mood => (
-                                        <Button key={mood} variant="outline" size="sm" className="rounded-full">
-                                            {mood}
+                                    {['Happy', 'Calm', 'Anxious', 'Upset', 'Unwell'].map(m => (
+                                        <Button
+                                            key={m}
+                                            variant={mood === m ? 'default' : 'outline'}
+                                            size="sm"
+                                            className={cn("rounded-full", mood === m ? "bg-indigo-600 text-white" : "")}
+                                            onClick={() => setMood(m)}
+                                        >
+                                            {m}
                                         </Button>
                                     ))}
                                 </div>
@@ -118,20 +141,54 @@ export default function ShiftReportForm() {
                             <CardTitle className="text-base">Participant</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <select className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none dark:bg-slate-950 dark:border-slate-800 mb-4">
-                                <option>Select Participant...</option>
-                                <option>Sarah Jones</option>
-                                <option>Michael Brown</option>
-                                <option>Emily Davis</option>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none dark:bg-slate-950 dark:border-slate-800 mb-4"
+                                value={participant}
+                                onChange={(e) => setParticipant(e.target.value)}
+                            >
+                                <option value="">Select Participant...</option>
+                                <option value="Sarah Jones">Sarah Jones</option>
+                                <option value="Michael Brown">Michael Brown</option>
+                                <option value="Emily Davis">Emily Davis</option>
                             </select>
 
-                            <div className="bg-white p-4 rounded-lg border border-slate-200 dark:bg-slate-950 dark:border-slate-800">
-                                <p className="text-sm font-medium text-slate-500 mb-2">Important Alerts</p>
-                                <ul className="text-xs space-y-1 text-red-600">
-                                    <li>• Allergies: Peanuts</li>
-                                    <li>• Risk of falls in shower</li>
-                                </ul>
+                            {participant && (
+                                <div className="bg-white p-4 rounded-lg border border-slate-200 dark:bg-slate-950 dark:border-slate-800 animate-in fade-in">
+                                    <p className="text-sm font-medium text-slate-500 mb-2">Important Alerts</p>
+                                    <ul className="text-xs space-y-1 text-red-600">
+                                        <li>• Allergies: Peanuts</li>
+                                        <li>• Risk of falls in shower</li>
+                                    </ul>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className={cn("transition-colors", incidentOccurred ? "border-red-400 bg-red-50 dark:bg-red-900/10" : "")}>
+                        <CardHeader>
+                            <CardTitle className="text-base flex items-center justify-between">
+                                Incident Check
+                                {incidentOccurred && <AlertTriangle className="h-5 w-5 text-red-600" />}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-2 p-2">
+                                <input
+                                    type="checkbox"
+                                    id="incident"
+                                    checked={incidentOccurred}
+                                    onChange={(e) => setIncidentOccurred(e.target.checked)}
+                                    className="h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-600"
+                                />
+                                <label htmlFor="incident" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    An incident occurred during this shift
+                                </label>
                             </div>
+                            {incidentOccurred && (
+                                <p className="text-xs text-red-600 mt-2 px-2">
+                                    You will be redirected to the Incident Report form after saving this shift note.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -147,8 +204,12 @@ export default function ShiftReportForm() {
                                     placeholder="e.g., Doctors appointment at 2pm..."
                                 />
                             </div>
-                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
-                                <Save className="mr-2 h-4 w-4" /> Save Report
+                            <Button
+                                className={cn("w-full text-white", incidentOccurred ? "bg-red-600 hover:bg-red-700" : "bg-indigo-600 hover:bg-indigo-700")}
+                                onClick={handleSubmit}
+                            >
+                                <Save className="mr-2 h-4 w-4" />
+                                {incidentOccurred ? 'Save & Report Incident' : 'Save Report'}
                             </Button>
                         </CardContent>
                     </Card>
