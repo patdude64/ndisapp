@@ -1,0 +1,149 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Participant {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime
+  gender        String
+  address       String?
+  ndisNumber    String?
+  planStartDate DateTime?
+  planEndDate   DateTime?
+  planManagement String?
+  status        String   @default("Active") // Active, Inactive, Pending
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  contacts      EmergencyContact[]
+  incidents     Incident[]
+  shiftReports  ShiftReport[]
+  risks         Risk[]
+  restrictivePractices RestrictivePractice[]
+}
+
+model EmergencyContact {
+  id            String      @id @default(cuid())
+  name          String
+  relationship  String
+  phone         String
+  email         String?
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+}
+
+model Staff {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  role          String
+  status        String   @default("Active")
+  
+  // Compliance Checks
+  wwccStatus    String   @default("Pending") // Valid, Expired, Pending
+  wwccExpiry    DateTime?
+  firstAidStatus String  @default("Pending")
+  firstAidExpiry DateTime?
+  ndisScreenStatus String @default("Pending")
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  reports       Incident[]
+  shiftReports  ShiftReport[]
+}
+
+model Incident {
+  id            String   @id @default(cuid())
+  date          DateTime
+  time          String?
+  location      String
+  type          String   // Physical Injury, Behaviour, etc.
+  description   String
+  immediateAction String
+  severity      String   @default("Low") // Low, Medium, High, Critical
+  status        String   @default("Open") // Open, Closed, Review
+  
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  
+  staffId       String?
+  staff         Staff?   @relation(fields: [staffId], references: [id])
+  
+  managerNotified Boolean @default(false)
+  restrictivePracticeUsed Boolean @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ShiftReport {
+  id            String   @id @default(cuid())
+  date          DateTime
+  shiftType     String   // Morning, Afternoon, Night
+  startTime     String
+  endTime       String
+  
+  mood          String?
+  medicationAdministered Boolean @default(false)
+  notes         String
+  handoverNotes String?
+  
+  incidentOccurred Boolean @default(false)
+  
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  
+  staffId       String?
+  staff         Staff?   @relation(fields: [staffId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RestrictivePractice {
+  id            String   @id @default(cuid())
+  type          String   // Chemical, Mechanical, etc.
+  isAuthorized  Boolean
+  startTime     DateTime
+  endTime       DateTime?
+  reason        String
+  strategies    String
+  staffInvolved String
+  
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id])
+  
+  createdAt     DateTime @default(now())
+}
+
+model Risk {
+  id            String   @id @default(cuid())
+  description   String
+  probability   String   // Low, Medium, High
+  impact        String   // Low, Medium, High, Critical
+  mitigation    String
+  status        String   @default("Active")
+  
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  
+  createdAt     DateTime @default(now())
+}
+
+model RegulatoryItem {
+  id            String   @id @default(cuid())
+  standard      String
+  requirement   String
+  status        String // Compliant, Review Needed
+  lastAudit     DateTime?
+}
